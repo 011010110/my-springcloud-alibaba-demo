@@ -1,0 +1,37 @@
+
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: consumer
+          uri: http://localhost:8180
+          predicates:
+            - Path=/consumer/**
+          filters:
+            - RewritePath=/consumer/(?<segment>.*), /$\{segment}
+        - id: provider
+          uri: http://localhost:8080
+          predicates:
+            - Path=/provider/**
+          filters:
+            # 访问localhost:8686/provider/, 请求会转发到localhost:8080/
+            - RewritePath=/provider/(?<segment>.*), /$\{segment}
+        #负载均衡与熔断
+        - id: circuitbreaker_route
+          uri: lb://my-springcloud-alibaba-provider
+          predicates:
+            - Path=/lbprovider/**
+          filters:
+            - RewritePath=/lbprovider/(?<segment>.*), /$\{segment}
+            - name: CircuitBreaker
+              args:
+                name: myCircuitBreaker
+                fallbackUri: forward:/fallback
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+      username: nacos
+      password: nacos
+
+server:
+  port: 8686
